@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Unsecured Page</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+<div class="container">
+    <h1>Unsecured Page</h1>
+    <p th:text="${message}"></p>
+    <a th:href="@{/login}">Login</a>
+</div>
+</body>
+</html>
