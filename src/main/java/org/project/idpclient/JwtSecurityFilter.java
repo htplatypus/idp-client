@@ -7,8 +7,11 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -29,38 +32,52 @@ public class JwtSecurityFilter extends OncePerRequestFilter {
     private final String SECRET_KEY = "my-secret-key-for-jwt-signing-and-validation";
     private final SecretKey key = new SecretKeySpec(SECRET_KEY.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
 
+    // when logging in, the server will set the JWT in a cookie
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        final String authorizationHeader = request.getHeader("Authorization");
-        System.out.println("Started JWT Filter authentication");
+        String token = null;
 
-        String username = null;
-        String jwt = null;
+        // check session for jwt token
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            token = (String) session.getAttribute("jwt");
+        }
 
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            jwt = authorizationHeader.substring(7);
-            try {
-                username = extractUsername(jwt);
-            } catch (Exception e) {
-                System.out.println("Invalid JWT! - " + username);
-                return;
+        if (token == null) {
+            if (request.getCookies() != null) {
+                for (Cookie cookie : request.getCookies()) {
+                    if ("jwt".equals(cookie.getName())) {
+                        token = cookie.getValue();
+                        break;
+                    }
+                }
             }
         }
 
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = new User(username, "", Collections.emptyList()); // Dummy user
-
-            var authenticationToken = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
-                    userDetails, null, userDetails.getAuthorities());
-            authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-            // set the authenticated user in the security context
-            SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-            System.out.println("security context should be set - authenticated");
+        if (token == null) {
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                token = authHeader.substring(7);
+            }
         }
 
-        // continue to downstream filters
+        if (token != null) {
+            try {
+                String username = extractUsername(token);
+
+                if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    UserDetails userDetails = new User(username, "", Collections.emptyList());
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
+            } catch (Exception e) {
+                System.out.println("Invalid JWT: " + e.getMessage());
+            }
+        }
+
         filterChain.doFilter(request, response);
     }
 

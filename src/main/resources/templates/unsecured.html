@@ -2,13 +2,14 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Unsecured Page</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
 <div class="container">
-    <h1>Unsecured Page</h1>
+    <h1>IdP Client Example </h1>
+    <h2>Unsecured Area</h2>
     <p th:text="${message}"></p>
-    <a th:href="@{/login}">Login</a>
+    <a href="/secured">Access secured page</a>
 </div>
 </body>
 </html>

@@ -19,12 +19,16 @@ import java.util.List;
 @Configuration
 public class SecurityConfig {
 
-
-    private final org.project.idpclient.JwtSecurityFilter jwtSecurityFilter;
     // register jwt filter before username/password filer
-    public SecurityConfig(org.project.idpclient.JwtSecurityFilter jwtSecurityFilter) {
+    private final org.project.idpclient.JwtSecurityFilter jwtSecurityFilter;
+    // set auth custom entry point
+    private final RedirectToIdpEntryPoint redirectToIdpEntryPoint;
+
+    public SecurityConfig(JwtSecurityFilter jwtSecurityFilter, RedirectToIdpEntryPoint redirectToIdpEntryPoint) {
         this.jwtSecurityFilter = jwtSecurityFilter;
+        this.redirectToIdpEntryPoint = redirectToIdpEntryPoint;
     }
+
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
@@ -33,22 +37,15 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/unsecured/**").permitAll()
-                        .requestMatchers("/login").permitAll()
+                        .requestMatchers("/error").permitAll()
+                        .requestMatchers("/api/handle-redirect").permitAll()
+                        .requestMatchers("/static/**").permitAll()
                         .requestMatchers("/secured/**").authenticated()
                         .anyRequest().authenticated()
                 )
-                .formLogin(form -> form
-                        .loginPage("/login")
-                        .failureUrl("/login?error=true")
-                        .defaultSuccessUrl("/secured")
-                        .permitAll()
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(redirectToIdpEntryPoint) // set custom entry point
                 )
-
-                .logout(logout -> logout
-                        .logoutUrl("/logout")
-                        .logoutSuccessUrl("/unsecured")
-                )
-
                 .addFilterBefore(jwtSecurityFilter, UsernamePasswordAuthenticationFilter.class);
         return httpSecurity.build();
     }

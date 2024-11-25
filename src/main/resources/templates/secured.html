@@ -2,11 +2,12 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Secured Page</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
 <div class="container">
-    <h1>Secured Page</h1>
+    <h1>IdP Client Example</h1>
+    <h2>Secured Area</h2>
     <p th:text="${message}"></p>
     <a th:href="@{/logout}">Logout</a>
 </div>
