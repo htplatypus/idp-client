@@ -1,4 +1,4 @@
-package org.project.idpclient;
+package org.project.idpclient.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

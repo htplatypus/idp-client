@@ -8,8 +8,9 @@
 <div class="container">
     <h1>IdP Client Example</h1>
     <h2>Secured Area</h2>
-    <p th:text="${message}"></p>
-    <a th:href="@{/logout}">Logout</a>
+    <form th:action="@{/logout}" method="post">
+        <button type="submit">Logout</button>
+    </form>
 </div>
 </body>
 </html>

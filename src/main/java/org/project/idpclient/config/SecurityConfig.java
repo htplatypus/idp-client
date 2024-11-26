@@ -1,5 +1,7 @@
-package org.project.idpclient;
+package org.project.idpclient.config;
 
+import org.project.idpclient.filter.JwtSecurityFilter;
+import org.project.idpclient.entrypoint.RedirectToIdpEntryPoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -20,7 +22,7 @@ import java.util.List;
 public class SecurityConfig {
 
     // register jwt filter before username/password filer
-    private final org.project.idpclient.JwtSecurityFilter jwtSecurityFilter;
+    private final JwtSecurityFilter jwtSecurityFilter;
     // set auth custom entry point
     private final RedirectToIdpEntryPoint redirectToIdpEntryPoint;
 
@@ -33,15 +35,21 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Enable CORS
+                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Enable CORS!!
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/unsecured/**").permitAll()
                         .requestMatchers("/error").permitAll()
-                        .requestMatchers("/api/handle-redirect").permitAll()
+                        .requestMatchers("/api/logout").permitAll()
                         .requestMatchers("/static/**", "/css/**", "/js/**", "/images/**").permitAll()
                         .requestMatchers("/secured/**").authenticated()
                         .anyRequest().authenticated()
+                )
+                .logout(logout -> logout //configure spring sec logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/unsecured")
+                        .invalidateHttpSession(true)
+                        .deleteCookies("jwt")
                 )
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(redirectToIdpEntryPoint) // set custom entry point
