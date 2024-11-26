@@ -39,7 +39,7 @@ public class SecurityConfig {
                         .requestMatchers("/unsecured/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/handle-redirect").permitAll()
-                        .requestMatchers("/static/**").permitAll()
+                        .requestMatchers("/static/**", "/css/**", "/js/**", "/images/**").permitAll()
                         .requestMatchers("/secured/**").authenticated()
                         .anyRequest().authenticated()
                 )

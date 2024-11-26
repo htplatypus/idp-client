@@ -23,14 +23,44 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.Key;
+import java.security.KeyFactory;
+import java.security.PublicKey;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
 import java.util.Collections;
 
 @Component
 public class JwtSecurityFilter extends OncePerRequestFilter {
 
-    private final String SECRET_KEY = "my-secret-key-for-jwt-signing-and-validation";
-    private final SecretKey key = new SecretKeySpec(SECRET_KEY.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+    private final PublicKey publicKey;
+
+    public JwtSecurityFilter() throws Exception {
+        // load the public key from PEM file for now
+        this.publicKey = loadPublicKey("keys/public_key.pem");
+    }
+
+
+    // change to call and load public key from trusted idp endpoint
+    private PublicKey loadPublicKey(String path) throws Exception {
+        String publicKeyPEM = new String(
+                Files.readAllBytes(Paths.get(getClass().getClassLoader().getResource(path).toURI())),
+                StandardCharsets.UTF_8
+        );
+
+        // remove PEM header and footer
+        publicKeyPEM = publicKeyPEM
+                .replace("-----BEGIN PUBLIC KEY-----", "")
+                .replace("-----END PUBLIC KEY-----", "")
+                .replaceAll("\\s", "");
+
+        // Decode the public key
+        byte[] keyBytes = Base64.getDecoder().decode(publicKeyPEM);
+        X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
+        return KeyFactory.getInstance("RSA").generatePublic(spec);
+    }
 
     // when logging in, the server will set the JWT in a cookie
     @Override
@@ -83,7 +113,7 @@ public class JwtSecurityFilter extends OncePerRequestFilter {
 
     private String extractUsername(String token) {
         Claims claims = Jwts.parser()
-                .verifyWith(key)
+                .verifyWith(publicKey)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
